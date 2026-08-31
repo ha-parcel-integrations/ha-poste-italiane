@@ -63,7 +63,7 @@
         "data": {
           "delivered_filter_type": "Pacchi consegnati: filtra per",
           "delivered_filter_amount": "Pacchi consegnati: quantità",
-          "include_history": "Includi cronologia dei pacchi"
+          "include_history": "Includi cronologia degli stati"
         }
       }
     },
