@@ -41,6 +41,7 @@ from .payloads import active_sample, crono_sample, delivered_sample, movement
         ("consegna non andata a buon fine. Contatta Assistenza", ParcelStatus.PROBLEM),
         ("Sono in corso delle verifiche sulla spedizione. Contatta Assistenza", ParcelStatus.PROBLEM),
         ("consegna non andata a buon fine perché l'indirizzo del destinatario risulta errato o incompleto. Contatta Assistenza", ParcelStatus.PROBLEM),
+        ("consegna non andata a buon fine. La spedizione tornerà in consegna a partire dal primo giorno lavorativo utile. Contatta Assistenza", ParcelStatus.PROBLEM),
         ("in restituzione al mittente", ParcelStatus.RETURNING),
         ("disponibile per il ritiro dal giorno lavorativo successivo alla data indicata", ParcelStatus.AT_PICKUP_POINT),
         ("a seguito di acquisto da poste.it", ParcelStatus.REGISTERED),

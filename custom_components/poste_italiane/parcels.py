@@ -39,7 +39,6 @@ _STATUS_MAP: dict[str, ParcelStatus] = {
     "presso il paese estero in data": ParcelStatus.IN_TRANSIT,
     "in data": ParcelStatus.IN_TRANSIT,
     "con successo in data": ParcelStatus.DELIVERED,
-    "consegna non andata a buon fine. contatta assistenza": ParcelStatus.PROBLEM,
     "sono in corso delle verifiche sulla spedizione. contatta assistenza": ParcelStatus.PROBLEM,
     "disponibile per il ritiro dal giorno lavorativo successivo alla data indicata": ParcelStatus.AT_PICKUP_POINT,
     "a seguito di acquisto da poste.it": ParcelStatus.REGISTERED,
@@ -91,7 +90,10 @@ def map_parcel_status(code: str | None) -> ParcelStatus:
         return ParcelStatus.IN_TRANSIT
     if normalized.startswith("completata la fase di verifica per lo svincolo"):
         return ParcelStatus.IN_TRANSIT
-    if normalized.startswith("consegna non andata a buon fine perché l'indirizzo del destinatario"):
+    # Two confirmed variants both start this way — a bad address, and a
+    # "will retry next business day" notice — so the prefix alone is enough
+    # to catch further wording variants of the same failed-attempt family.
+    if normalized.startswith("consegna non andata a buon fine"):
         return ParcelStatus.PROBLEM
     if normalized.startswith("in restituzione al mittente"):
         return ParcelStatus.RETURNING
