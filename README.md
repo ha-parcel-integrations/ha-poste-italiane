@@ -34,9 +34,10 @@ Part of the [ha-parcel-integrations](https://github.com/ha-parcel-integrations) 
 
 - Track any number of Poste Italiane parcels by tracking code — no account needed
 - Per-parcel sensor with the canonical status, carrier status text, ETA and a tracking deep-link
-- Summary sensors: incoming parcels, next delivery and recently delivered parcels
+- Summary sensors: incoming parcels, parcels awaiting pickup, next delivery and recently delivered parcels
 - `poste_italiane.track_parcel` / `poste_italiane.untrack_parcel` services, so a dashboard button can add a parcel
 - Events + device triggers for no-code automations (parcel registered, status changed, delivered, delivery time changed)
+- Read-only **Deliveries** calendar with the expected delivery windows
 - Opt-in per-parcel status history
 - Manual refresh button and a diagnostic last-update sensor
 
@@ -88,6 +89,7 @@ Standard HA removal applies: **Settings → Devices & Services → Poste Italian
 |---|---|
 | `sensor.poste_italiane_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
 | `sensor.poste_italiane_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
+| `sensor.poste_italiane_awaiting_pickup` | Number of parcels waiting for collection at a Poste Italiane pickup point (`at_pickup_point`), full list under the `parcels` attribute |
 | `sensor.poste_italiane_next_delivery` | Earliest expected delivery moment across all active parcels |
 | `sensor.poste_italiane_delivered_parcels` | Recently delivered parcels (see the retention option) |
 | `sensor.poste_italiane_last_successful_update` | Diagnostic: when Poste Italiane was last polled successfully |
@@ -103,7 +105,10 @@ The `status` field is the carrier-agnostic enum shared by the whole integration 
 | `registered` | Announced / received by Poste Italiane |
 | `in_transit` | In the sorting network |
 | `out_for_delivery` | With the courier today |
+| `at_pickup_point` | Waiting for collection at a pickup point |
 | `delivered` | Delivered |
+| `returning` | On the way back to the sender |
+| `problem` | Poste Italiane reports an exception and refers you to support |
 | `unknown` | Not yet scanned, or a status we have not mapped yet |
 
 The carrier's own human-readable text is always available as `raw_status`.
