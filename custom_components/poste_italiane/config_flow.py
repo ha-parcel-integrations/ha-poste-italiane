@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import Any
 
 import voluptuous as vol
@@ -30,8 +29,6 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-_TRACKING_CODE_RE = re.compile(r"^[A-Za-z0-9]{6,40}$")
-
 
 def normalize_tracking_code(value: str) -> str:
     """Trim surrounding whitespace without changing the carrier code."""
@@ -39,8 +36,13 @@ def normalize_tracking_code(value: str) -> str:
 
 
 def valid_tracking_code(value: str) -> bool:
-    """Whether ``value`` looks like a Poste Italiane tracking code."""
-    return bool(_TRACKING_CODE_RE.match(value))
+    """Accept every non-empty code.
+
+    Poste Italiane's real tracking-code shape varies too much and is not
+    fully confirmed, and an unrecognised code just comes back "not found"
+    from the API anyway.
+    """
+    return bool(value)
 
 
 def _current_parcels(entry: ConfigEntry) -> list[dict[str, str]]:
