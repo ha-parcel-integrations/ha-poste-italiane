@@ -2,7 +2,7 @@
   "domain": "poste_italiane",
   "name": "Poste Italiane",
   "codeowners": [
-    "@peternijssen"
+    "@peter-mdf"
   ],
   "config_flow": true,
   "documentation": "https://github.com/ha-parcel-integrations/ha-poste-italiane",
