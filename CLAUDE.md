@@ -42,9 +42,15 @@ This repo follows it exactly.
 
 This is an account-less, public tracking-code integration. It polls one code
 per request and retains the last successful parcel when the carrier briefly
-answers that a previously known code cannot be found. Its public response has
-no confirmed pickup-point, size, weight, sender or receiver fields, so those
-canonical fields are intentionally `None`. The Italian `dataPrevistaConsegna`
+answers that a previously known code cannot be found. Its public response has no
+size, weight, sender or receiver fields, so those canonical fields are
+intentionally `None`. **`pickup_point` is populated**, from the structured
+office fields (`denominazioneUfficio` + `indirizzoUfficio`) or an `Ufficio
+Postale` that names itself in `luogo` — but **only on an event whose own
+wording says the parcel is collectable**. Poste fills those same office fields
+on its own sorting centres, so reading them unconditionally named a depot as
+the pickup point on ordinary doorstep deliveries; and `luogo` on a delivery
+event is the recipient's own address, so it is never read blind. The Italian `dataPrevistaConsegna`
 text is parsed into a local-day ETA window; `url`, that delivery window and
 opt-in `history` are capabilities.
 

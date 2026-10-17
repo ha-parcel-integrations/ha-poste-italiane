@@ -19,6 +19,7 @@ from custom_components.poste_italiane.parcels import (
     map_parcel_status,
     normalize_parcel,
     parse_delivery_estimate,
+    pickup_point,
     sort_parcels_by_ts,
     to_iso_timestamp,
 )
@@ -115,7 +116,9 @@ def test_status_code_five_overrides_an_unrecognised_latest_event():
 
 
 def test_capabilities_are_accurate():
-    assert CAPABILITIES == frozenset({"delivery_window", "url", "history"})
+    assert CAPABILITIES == frozenset(
+        {"delivery_window", "pickup_point", "url", "history"}
+    )
     assert CAPABILITIES <= KNOWN_CAPABILITIES
 
 
@@ -159,3 +162,65 @@ def test_collection_wordings_share_one_prefix(caplog):
 def test_taken_in_charge_by_an_operator_is_registered(caplog):
     assert map_parcel_status("da un nostro operatore") is ParcelStatus.REGISTERED
     assert "Unrecognised" not in caplog.text
+
+
+def test_pickup_point_comes_from_the_office_fields():
+    """A Punto Poste names itself in structured fields."""
+    events = [
+        {
+            "statoLavorazione": "la spedizione è stata presa in carico presso il Punto Poste",
+            "luogo": "TABACCHERIA N. 7 VIA PIAVE 6, 71011 APRICENA (FG)",
+            "denominazioneUfficio": "TABACCHERIA N. 7",
+            "indirizzoUfficio": "VIA PIAVE 6",
+        }
+    ]
+    assert pickup_point(events) == "TABACCHERIA N. 7, VIA PIAVE 6"
+
+
+def test_pickup_point_accepts_a_post_office_named_in_luogo():
+    events = [
+        {
+            "statoLavorazione": "disponibile per il ritiro",
+            "luogo": "Ufficio Postale FIRENZE 1 VIA GIUSEPPE GALLIANO 27, 50144 FIRENZE (FI)",
+        }
+    ]
+    assert pickup_point(events).startswith("Ufficio Postale FIRENZE 1")
+
+
+def test_pickup_point_ignores_a_sorting_centre(caplog):
+    """Poste fills the office fields on its own depots too."""
+    events = [
+        {
+            "statoLavorazione": "la spedizione è in transito",
+            "luogo": "BOLOGNA CMP WINDOWS, VIA ZANARDI 32",
+            "denominazioneUfficio": "BOLOGNA CMP WINDOWS",
+            "indirizzoUfficio": "VIA ZANARDI 32",
+        }
+    ]
+    assert pickup_point(events) is None
+
+
+def test_pickup_point_never_reads_a_home_address_from_luogo():
+    """luogo on an ordinary delivery is the recipient's own address."""
+    events = [{"statoLavorazione": "la spedizione è stata consegnata",
+               "luogo": "VIA QUALCHE STRADA 12, 00100 ROMA (RM)"}]
+    assert pickup_point(events) is None
+    assert pickup_point([]) is None
+    assert pickup_point(None) is None
+    assert pickup_point([None, "x"]) is None
+
+
+def test_pickup_flag_follows_the_awaiting_pickup_status():
+    raw = {
+        "listaMovimenti": [
+            {
+                "statoLavorazione": "disponibile per il ritiro entro i termini indicati su sms/email",
+                "luogo": "Ufficio Postale ROMA 1 VIA X 1, 00100 ROMA (RM)",
+                "dataOra": 1784541397000,
+            }
+        ]
+    }
+    parcel = normalize_parcel(raw)
+    assert parcel["status"] is ParcelStatus.AT_PICKUP_POINT
+    assert parcel["pickup"] is True
+    assert parcel["pickup_point"].startswith("Ufficio Postale ROMA 1")

@@ -229,6 +229,55 @@ def tracking_url(tracking_code: str | None) -> str | None:
     return TRACKING_URL.format(tracking_code=tracking_code)
 
 
+# Wording that means the parcel is at, or was handed over at, a place the
+# recipient collects it from. The office fields alone are not enough: Poste
+# fills them on its own sorting centres too ("BOLOGNA CMP", "ANCONA RECAPITO"),
+# so a parcel delivered to the door would otherwise name a depot as its pickup
+# point.
+_PICKUP_EVENT_PREFIXES = (
+    "disponibile per il ritiro",
+    "la spedizione è stata presa in carico presso il punto poste",
+    "da un nostro operatore presso l'ufficio postale",
+)
+
+
+def _is_pickup_event(text: object) -> bool:
+    """Whether an event's own wording places the parcel at a collection point."""
+    if not isinstance(text, str):
+        return False
+    normalised = " ".join(text.casefold().split())
+    normalised = re.sub(r"\be'(?=\s)", "è", normalised)
+    return normalised.startswith(_PICKUP_EVENT_PREFIXES)
+
+
+def pickup_point(events: list | None) -> str | None:
+    """Return the collection point named on the newest collection event.
+
+    Only events whose own wording says the parcel is collectable are read, and
+    from those only the structured office fields plus a ``luogo`` Poste itself
+    labels an ``Ufficio Postale``. ``luogo`` on an ordinary delivery event
+    carries the recipient's own address, so it is never read blind.
+    """
+    for event in reversed(events or []):
+        if not isinstance(event, dict):
+            continue
+        if not _is_pickup_event(event.get("statoLavorazione")):
+            continue
+        name = event.get("denominazioneUfficio")
+        if isinstance(name, str) and name.strip():
+            address = event.get("indirizzoUfficio")
+            parts = [name.strip()]
+            if isinstance(address, str) and address.strip():
+                parts.append(address.strip())
+            return ", ".join(parts)
+        place = event.get("luogo")
+        if isinstance(place, str) and place.strip().upper().startswith(
+            "UFFICIO POSTALE"
+        ):
+            return place.strip()
+    return None
+
+
 def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
     """Return a carrier-agnostic parcel dict with the payload under ``raw``.
 
@@ -268,8 +317,8 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
         "delivered_at": delivered_at if delivered else None,
         "planned_from": None if delivered else planned_from,
         "planned_to": None if delivered else planned_to,
-        "pickup": False,
-        "pickup_point": None,
+        "pickup": status is ParcelStatus.AT_PICKUP_POINT,
+        "pickup_point": pickup_point(events),
         "url": tracking_url(tracking_code),
         "weight": None,
         "dimensions": None,
