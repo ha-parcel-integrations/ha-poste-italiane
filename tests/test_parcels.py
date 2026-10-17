@@ -15,6 +15,7 @@ from custom_components.poste_italiane.const import (
 from custom_components.poste_italiane.parcels import (
     apply_delivered_filter,
     build_history,
+    format_dimensions,
     map_event_status,
     map_parcel_status,
     normalize_parcel,
@@ -224,3 +225,77 @@ def test_pickup_flag_follows_the_awaiting_pickup_status():
     assert parcel["status"] is ParcelStatus.AT_PICKUP_POINT
     assert parcel["pickup"] is True
     assert parcel["pickup_point"].startswith("Ufficio Postale ROMA 1")
+
+
+# ---------------------------------------------------------------------------
+# edge cases the happy path never reaches
+# ---------------------------------------------------------------------------
+
+
+def test_map_parcel_status_is_silent_without_a_status(caplog):
+    """A not-yet-scanned parcel is unknown, not a thing to report."""
+    assert map_parcel_status(None) is ParcelStatus.UNKNOWN
+    assert map_parcel_status("") is ParcelStatus.UNKNOWN
+    assert "Unrecognised" not in caplog.text
+
+
+def test_to_iso_timestamp_handles_epochs_and_nonsense():
+    assert to_iso_timestamp(None) is None
+    # Poste stamps in epoch milliseconds.
+    assert to_iso_timestamp(1784541397000).startswith("2026-")
+    assert to_iso_timestamp(10**20) is None
+    assert to_iso_timestamp("already a string") == "already a string"
+
+
+def test_parse_delivery_estimate_refuses_what_it_cannot_read():
+    assert parse_delivery_estimate(None) == (None, None)
+    assert parse_delivery_estimate("nothing date-shaped here") == (None, None)
+    # Matches the sentence, but names no month Poste uses.
+    assert parse_delivery_estimate("consegna prevista 31 smarzo 2026") == (None, None)
+    # Matches, names a real month, but is not a real date.
+    assert parse_delivery_estimate("consegna prevista 31 febbraio 2026") == (
+        None,
+        None,
+    )
+    assert parse_delivery_estimate("consegna prevista entro 11 agosto 2026") == (
+        "2026-08-11T00:00:00+02:00",
+        "2026-08-11T23:59:59.999999+02:00",
+    )
+
+
+def test_format_dimensions_needs_all_three_sides():
+    assert format_dimensions(None, 2, 3) is None
+    assert format_dimensions(1, None, 3) is None
+    assert format_dimensions(1, 2, None) is None
+    assert format_dimensions(35, 31, 7) == {
+        "length": 35,
+        "width": 31,
+        "height": 7,
+        "text": "35 x 31 x 7 cm",
+    }
+
+
+def test_build_history_skips_entries_it_cannot_place():
+    history = build_history(
+        [
+            "not a dict",
+            {"statoLavorazione": "in data", "dataOra": None},
+            {"statoLavorazione": "in data", "dataOra": 1784541397000},
+            {"statoLavorazione": "in data", "dataOra": "not a date"},
+        ]
+    )
+    # The dated one is kept; the undated one is dropped and the unparseable
+    # one sorts to the end.
+    assert len(history) == 2
+    assert history[0]["timestamp"].startswith("2026-")
+
+
+def test_normalize_parcel_ignores_a_non_dict_event():
+    parcel = normalize_parcel(
+        {"listaMovimenti": ["nope", {"statoLavorazione": "in data", "dataOra": 1}]}
+    )
+    assert parcel["status"] is ParcelStatus.IN_TRANSIT
+
+
+def test_pickup_point_ignores_a_non_string_status():
+    assert pickup_point([{"statoLavorazione": 7, "denominazioneUfficio": "X"}]) is None
