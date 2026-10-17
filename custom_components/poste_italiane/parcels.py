@@ -82,10 +82,16 @@ def map_parcel_status(code: str | None) -> ParcelStatus:
     if not code:
         return ParcelStatus.UNKNOWN
     normalized = " ".join(str(code).casefold().split())
+    # Poste writes "è" as the ASCII "e'" on some responses — the same sentence
+    # arrived both ways — so a delivered parcel would otherwise fall to
+    # unknown purely on typography.
+    normalized = re.sub(r"\be'(?=\s)", "è", normalized)
     if normalized.startswith("la spedizione è stata presa in carico"):
         return ParcelStatus.REGISTERED
-    if normalized.startswith("da un nostro operatore presso l'ufficio postale"):
+    if normalized.startswith("da un nostro operatore"):
         return ParcelStatus.REGISTERED
+    if normalized.startswith("disponibile per il ritiro"):
+        return ParcelStatus.AT_PICKUP_POINT
     if normalized.startswith("la spedizione è in transito"):
         return ParcelStatus.IN_TRANSIT
     if normalized.startswith("completata la fase di verifica per lo svincolo"):

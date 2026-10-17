@@ -133,3 +133,29 @@ def test_sort_and_delivered_filter_keep_contract():
         {"barcode": "recent", "delivered_at": (now - timedelta(days=1)).isoformat()},
         {"barcode": "old", "delivered_at": (now - timedelta(days=30)).isoformat()},
     ], entry)[0]["barcode"] == "recent"
+
+
+def test_ascii_apostrophe_variant_of_e_accent_still_maps(caplog):
+    """Poste sends the same sentence as both "è" and "e'"."""
+    assert map_parcel_status("La spedizione e' stata consegnata") is (
+        ParcelStatus.DELIVERED
+    )
+    assert map_parcel_status("La spedizione è stata consegnata") is (
+        ParcelStatus.DELIVERED
+    )
+    assert "Unrecognised" not in caplog.text
+
+
+def test_collection_wordings_share_one_prefix(caplog):
+    """Both observed "available for collection" sentences are a pickup point."""
+    for text in (
+        "disponibile per il ritiro dal giorno lavorativo successivo alla data indicata",
+        "disponibile per il ritiro entro i termini indicati su sms/email",
+    ):
+        assert map_parcel_status(text) is ParcelStatus.AT_PICKUP_POINT
+    assert "Unrecognised" not in caplog.text
+
+
+def test_taken_in_charge_by_an_operator_is_registered(caplog):
+    assert map_parcel_status("da un nostro operatore") is ParcelStatus.REGISTERED
+    assert "Unrecognised" not in caplog.text

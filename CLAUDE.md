@@ -48,9 +48,22 @@ canonical fields are intentionally `None`. The Italian `dataPrevistaConsegna`
 text is parsed into a local-day ETA window; `url`, that delivery window and
 opt-in `history` are capabilities.
 
-The confirmed status vocabulary is incomplete. Unknown status text must remain
-`unknown` and emit the suite one-shot warning; do not infer return, collection
-or failure semantics. Carrier mechanics are in the private research notes at
+A 2026-10-17 sweep of fourteen real parcels confirmed the return
+(`in restituzione al mittente`), collection (`disponibile per il ritiro`) and
+failed-attempt (`consegna non andata a buon fine`) families, and the
+`Punto Poste` / `Punto Poste-Locker` handover wording. Two traps it exposed:
+
+- **Poste writes `è` as the ASCII `e'` on some responses** — the very same
+  sentence arrived both ways across parcels, so `map_parcel_status` folds
+  `e'` back to `è` before matching. Without it a delivered parcel fell to
+  `unknown` purely on typography.
+- **Collection has more than one wording** (`…dal giorno lavorativo
+  successivo…` and `…entro i termini indicati su sms/email`), so the match is
+  on the `disponibile per il ritiro` prefix rather than either full sentence.
+
+The confirmed status vocabulary is still incomplete. Unknown status text must
+remain `unknown` and emit the suite one-shot warning; do not infer return,
+collection or failure semantics beyond the families above. Carrier mechanics are in the private research notes at
 `carrier-research/poste-italiane/api/`.
 
 ## Running tests
