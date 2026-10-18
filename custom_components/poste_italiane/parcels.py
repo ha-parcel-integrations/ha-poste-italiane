@@ -21,6 +21,9 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# Built once at import: constructing a ZoneInfo reads the tz file from disk.
+CARRIER_TZ = ZoneInfo("Europe/Rome")
+
 # Where users report a status we do not map yet. Rewritten by the bootstrap
 # script; it must point at the carrier's own repo so the log line is
 # copy-pasteable straight into a new issue.
@@ -160,7 +163,7 @@ def parse_delivery_estimate(value: str | None) -> tuple[str | None, str | None]:
     if month is None:
         return None, None
     try:
-        start = datetime(int(year), month, int(day), tzinfo=ZoneInfo("Europe/Rome"))
+        start = datetime(int(year), month, int(day), tzinfo=CARRIER_TZ)
     except ValueError:
         return None, None
     end = start + timedelta(days=1) - timedelta(microseconds=1)
