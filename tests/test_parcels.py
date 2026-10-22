@@ -1,5 +1,6 @@
 """Tests for Poste Italiane payload normalisation."""
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -31,21 +32,39 @@ from .payloads import active_sample, crono_sample, delivered_sample, movement
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
-        ("La spedizione è stata presa in carico da un nostro operatore", ParcelStatus.REGISTERED),
+        (
+            "La spedizione è stata presa in carico da un nostro operatore",
+            ParcelStatus.REGISTERED,
+        ),
         ("da un nostro operatore presso l'Ufficio Postale", ParcelStatus.REGISTERED),
         ("la spedizione è in transito presso il Centro", ParcelStatus.IN_TRANSIT),
-        ("completata la fase di verifica per lo svincolo presso il Centro", ParcelStatus.IN_TRANSIT),
+        (
+            "completata la fase di verifica per lo svincolo presso il Centro",
+            ParcelStatus.IN_TRANSIT,
+        ),
         ("la spedizione è in consegna", ParcelStatus.OUT_FOR_DELIVERY),
         ("la spedizione è stata consegnata", ParcelStatus.DELIVERED),
         ("presso il paese estero in data", ParcelStatus.IN_TRANSIT),
         ("in data", ParcelStatus.IN_TRANSIT),
         ("con successo in data", ParcelStatus.DELIVERED),
         ("consegna non andata a buon fine. Contatta Assistenza", ParcelStatus.PROBLEM),
-        ("Sono in corso delle verifiche sulla spedizione. Contatta Assistenza", ParcelStatus.PROBLEM),
-        ("consegna non andata a buon fine perché l'indirizzo del destinatario risulta errato o incompleto. Contatta Assistenza", ParcelStatus.PROBLEM),
-        ("consegna non andata a buon fine. La spedizione tornerà in consegna a partire dal primo giorno lavorativo utile. Contatta Assistenza", ParcelStatus.PROBLEM),
+        (
+            "Sono in corso delle verifiche sulla spedizione. Contatta Assistenza",
+            ParcelStatus.PROBLEM,
+        ),
+        (
+            "consegna non andata a buon fine perché l'indirizzo del destinatario risulta errato o incompleto. Contatta Assistenza",
+            ParcelStatus.PROBLEM,
+        ),
+        (
+            "consegna non andata a buon fine. La spedizione tornerà in consegna a partire dal primo giorno lavorativo utile. Contatta Assistenza",
+            ParcelStatus.PROBLEM,
+        ),
         ("in restituzione al mittente", ParcelStatus.RETURNING),
-        ("disponibile per il ritiro dal giorno lavorativo successivo alla data indicata", ParcelStatus.AT_PICKUP_POINT),
+        (
+            "disponibile per il ritiro dal giorno lavorativo successivo alla data indicata",
+            ParcelStatus.AT_PICKUP_POINT,
+        ),
         ("a seguito di acquisto da poste.it", ParcelStatus.REGISTERED),
     ],
 )
@@ -65,18 +84,23 @@ def test_epoch_milliseconds_are_converted_to_utc():
 
 
 def test_parses_italian_delivery_estimate_as_a_local_day_window():
-    assert parse_delivery_estimate("Consegna prevista entro Martedì 21 Gennaio 2025") == (
-        "2025-01-21T00:00:00+01:00", "2025-01-21T23:59:59.999999+01:00"
-    )
+    assert parse_delivery_estimate(
+        "Consegna prevista entro Martedì 21 Gennaio 2025"
+    ) == ("2025-01-21T00:00:00+01:00", "2025-01-21T23:59:59.999999+01:00")
 
 
 def test_history_is_oldest_first_and_capped():
     history = build_history(delivered_sample()["listaMovimenti"])
     assert [entry["status"] for entry in history] == [
-        ParcelStatus.REGISTERED, ParcelStatus.IN_TRANSIT,
-        ParcelStatus.OUT_FOR_DELIVERY, ParcelStatus.DELIVERED,
+        ParcelStatus.REGISTERED,
+        ParcelStatus.IN_TRANSIT,
+        ParcelStatus.OUT_FOR_DELIVERY,
+        ParcelStatus.DELIVERED,
     ]
-    events = [movement("la spedizione è in transito", 1767000000000 + day) for day in range(25)]
+    events = [
+        movement("la spedizione è in transito", 1767000000000 + day)
+        for day in range(25)
+    ]
     assert len(build_history(events)) == 20
 
 
@@ -84,9 +108,23 @@ def test_normalize_publishes_exact_contract_and_full_raw_response():
     raw = delivered_sample()
     parcel = normalize_parcel(raw, include_history=True)
     assert list(parcel) == [
-        "carrier", "barcode", "sender", "receiver", "status", "raw_status", "delivered",
-        "delivered_at", "planned_from", "planned_to", "pickup", "pickup_point", "url",
-        "weight", "dimensions", "history", "raw",
+        "carrier",
+        "barcode",
+        "sender",
+        "receiver",
+        "status",
+        "raw_status",
+        "delivered",
+        "delivered_at",
+        "planned_from",
+        "planned_to",
+        "pickup",
+        "pickup_point",
+        "url",
+        "weight",
+        "dimensions",
+        "history",
+        "raw",
     ]
     assert parcel["carrier"] == "Poste Italiane"
     assert parcel["barcode"] == "CW000000000IT"
@@ -117,26 +155,47 @@ def test_status_code_five_overrides_an_unrecognised_latest_event():
 
 
 def test_capabilities_are_accurate():
-    assert CAPABILITIES == frozenset(
-        {"delivery_window", "pickup_point", "url", "history"}
+    assert (
+        frozenset({"delivery_window", "pickup_point", "url", "history"}) == CAPABILITIES
     )
     assert CAPABILITIES <= KNOWN_CAPABILITIES
 
 
 def test_sort_and_delivered_filter_keep_contract():
     ordered = sort_parcels_by_ts(
-        [{"barcode": "a", "delivered_at": "2026-05-02T10:00:00Z"}, {"barcode": "b", "delivered_at": None}],
-        "delivered_at", descending=True,
+        [
+            {"barcode": "a", "delivered_at": "2026-05-02T10:00:00Z"},
+            {"barcode": "b", "delivered_at": None},
+        ],
+        "delivered_at",
+        descending=True,
     )
     assert [parcel["barcode"] for parcel in ordered] == ["a", "b"]
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=DOMAIN, options={
-        CONF_DELIVERED_FILTER_TYPE: "days", CONF_DELIVERED_FILTER_AMOUNT: 7,
-    })
-    now = datetime.now(timezone.utc)
-    assert apply_delivered_filter([
-        {"barcode": "recent", "delivered_at": (now - timedelta(days=1)).isoformat()},
-        {"barcode": "old", "delivered_at": (now - timedelta(days=30)).isoformat()},
-    ], entry)[0]["barcode"] == "recent"
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=DOMAIN,
+        options={
+            CONF_DELIVERED_FILTER_TYPE: "days",
+            CONF_DELIVERED_FILTER_AMOUNT: 7,
+        },
+    )
+    now = datetime.now(UTC)
+    assert (
+        apply_delivered_filter(
+            [
+                {
+                    "barcode": "recent",
+                    "delivered_at": (now - timedelta(days=1)).isoformat(),
+                },
+                {
+                    "barcode": "old",
+                    "delivered_at": (now - timedelta(days=30)).isoformat(),
+                },
+            ],
+            entry,
+        )[0]["barcode"]
+        == "recent"
+    )
 
 
 def test_ascii_apostrophe_variant_of_e_accent_still_maps(caplog):
@@ -203,8 +262,12 @@ def test_pickup_point_ignores_a_sorting_centre(caplog):
 
 def test_pickup_point_never_reads_a_home_address_from_luogo():
     """luogo on an ordinary delivery is the recipient's own address."""
-    events = [{"statoLavorazione": "la spedizione è stata consegnata",
-               "luogo": "VIA QUALCHE STRADA 12, 00100 ROMA (RM)"}]
+    events = [
+        {
+            "statoLavorazione": "la spedizione è stata consegnata",
+            "luogo": "VIA QUALCHE STRADA 12, 00100 ROMA (RM)",
+        }
+    ]
     assert pickup_point(events) is None
     assert pickup_point([]) is None
     assert pickup_point(None) is None

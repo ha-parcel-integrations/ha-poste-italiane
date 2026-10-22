@@ -1,4 +1,5 @@
 """Constants for the Poste Italiane parcel tracker integration."""
+
 from enum import StrEnum
 
 from homeassistant.const import Platform
@@ -16,14 +17,14 @@ class ParcelStatus(StrEnum):
     roughly the order a parcel moves through.
     """
 
-    REGISTERED = "registered"               # Sender announced the parcel; not handed over yet
-    IN_TRANSIT = "in_transit"               # In the carrier's network
-    OUT_FOR_DELIVERY = "out_for_delivery"   # On a delivery vehicle today
-    AT_PICKUP_POINT = "at_pickup_point"     # Ready to collect at a pickup location
-    DELIVERED = "delivered"                 # Handed over
-    RETURNING = "returning"                 # Failed delivery, going back to sender
-    PROBLEM = "problem"                     # Carrier reports an exception/issue
-    UNKNOWN = "unknown"                     # Raw status we have not mapped yet
+    REGISTERED = "registered"  # Sender announced the parcel; not handed over yet
+    IN_TRANSIT = "in_transit"  # In the carrier's network
+    OUT_FOR_DELIVERY = "out_for_delivery"  # On a delivery vehicle today
+    AT_PICKUP_POINT = "at_pickup_point"  # Ready to collect at a pickup location
+    DELIVERED = "delivered"  # Handed over
+    RETURNING = "returning"  # Failed delivery, going back to sender
+    PROBLEM = "problem"  # Carrier reports an exception/issue
+    UNKNOWN = "unknown"  # Raw status we have not mapped yet
 
 
 PLATFORMS = [Platform.BUTTON, Platform.CALENDAR, Platform.SENSOR]
@@ -74,7 +75,9 @@ CAPABILITIES = frozenset({"delivery_window", "pickup_point", "url", "history"})
 # repo — the full write-up lives in your own private research notes, not in
 # this repo.
 TRACKING_API_URL = "https://www.poste.it/online/dovequando/DQ-REST/ricercasemplice"
-TRACKING_URL = "https://www.poste.it/cerca/index.html#/risultati-spedizioni/{tracking_code}"
+TRACKING_URL = (
+    "https://www.poste.it/cerca/index.html#/risultati-spedizioni/{tracking_code}"
+)
 
 # Tracked parcels live in the config entry options as a list of
 # ``{tracking_code}`` dicts — this carrier has no account or parcel feed, so the

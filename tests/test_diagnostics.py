@@ -1,4 +1,5 @@
 """Tests for Poste Italiane diagnostics."""
+
 from datetime import timedelta
 from unittest.mock import MagicMock
 
@@ -21,11 +22,13 @@ async def test_diagnostics_redacts_and_counts(hass):
             "status": "out_for_delivery",
             "raw": {
                 "idTracciatura": "CW000000000IT",
-                "listaMovimenti": [{
-                    "luogo": "Private office",
-                    "denominazioneUfficio": "Private office name",
-                    "indirizzoUfficio": "Private street 1",
-                }],
+                "listaMovimenti": [
+                    {
+                        "luogo": "Private office",
+                        "denominazioneUfficio": "Private office name",
+                        "indirizzoUfficio": "Private street 1",
+                    }
+                ],
             },
         }
     ]
@@ -50,7 +53,10 @@ async def test_diagnostics_redacts_and_counts(hass):
     assert result["incoming"][0]["receiver"] == "**REDACTED**"
     assert result["incoming"][0]["raw"]["idTracciatura"] == "**REDACTED**"
     assert result["incoming"][0]["raw"]["listaMovimenti"][0]["luogo"] == "**REDACTED**"
-    assert result["incoming"][0]["raw"]["listaMovimenti"][0]["indirizzoUfficio"] == "**REDACTED**"
+    assert (
+        result["incoming"][0]["raw"]["listaMovimenti"][0]["indirizzoUfficio"]
+        == "**REDACTED**"
+    )
     # non-identifying fields survive, or the diagnostics would be useless
     assert result["incoming"][0]["status"] == "out_for_delivery"
 

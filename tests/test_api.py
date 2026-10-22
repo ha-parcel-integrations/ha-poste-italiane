@@ -1,4 +1,5 @@
 """Tests for the Poste Italiane API client."""
+
 import json
 from unittest.mock import AsyncMock, MagicMock
 
@@ -29,9 +30,7 @@ def _session_returning(status: int, body: object = None) -> MagicMock:
 
 
 async def test_get_parcel_returns_parcel_on_success():
-    session = _session_returning(
-        200, {"esitoRicerca": "3", "idTracciatura": CODE}
-    )
+    session = _session_returning(200, {"esitoRicerca": "3", "idTracciatura": CODE})
     client = PosteItalianeApiClient(session)
 
     parcel = await client.async_get_parcel(CODE)
@@ -39,32 +38,34 @@ async def test_get_parcel_returns_parcel_on_success():
     assert parcel["idTracciatura"] == CODE
     assert session.post.call_args.args[0].endswith("/ricercasemplice")
     assert session.post.call_args.kwargs["json"] == {
-        "codiceSpedizione": CODE, "tipoRichiedente": "WEB", "periodoRicerca": 1
+        "codiceSpedizione": CODE,
+        "tipoRichiedente": "WEB",
+        "periodoRicerca": 1,
     }
     assert session.post.call_args.kwargs["headers"]["Origin"] == "https://www.poste.it"
-    assert session.post.call_args.kwargs["headers"]["Referer"] == "https://www.poste.it/"
+    assert (
+        session.post.call_args.kwargs["headers"]["Referer"] == "https://www.poste.it/"
+    )
 
 
 async def test_get_parcel_returns_none_when_not_found():
     """An unknown or not-yet-scanned code is a normal state, not an error."""
-    client = PosteItalianeApiClient(
-        _session_returning(200, {"esitoRicerca": "2"})
-    )
+    client = PosteItalianeApiClient(_session_returning(200, {"esitoRicerca": "2"}))
     assert await client.async_get_parcel("EXAMPLE000000") is None
 
 
 async def test_get_parcel_returns_none_for_the_invalid_code_envelope():
     client = PosteItalianeApiClient(
-        _session_returning(200, {"esitoRicerca": "1", "stato": "1", "idTracciatura": "1234567890"})
+        _session_returning(
+            200, {"esitoRicerca": "1", "stato": "1", "idTracciatura": "1234567890"}
+        )
     )
     assert await client.async_get_parcel("1234567890") is None
 
 
 async def test_get_parcel_raises_on_hollow_success():
     """A success envelope needs the carrier's resolved tracking code."""
-    client = PosteItalianeApiClient(
-        _session_returning(200, {"esitoRicerca": "3"})
-    )
+    client = PosteItalianeApiClient(_session_returning(200, {"esitoRicerca": "3"}))
     with pytest.raises(PosteItalianeApiError):
         await client.async_get_parcel(CODE)
 

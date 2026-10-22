@@ -1,4 +1,5 @@
 """Tests for Poste Italiane device triggers."""
+
 from custom_components.poste_italiane.const import DOMAIN
 from custom_components.poste_italiane.device_trigger import (
     TRIGGER_EVENTS,

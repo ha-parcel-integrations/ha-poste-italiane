@@ -1,8 +1,9 @@
 """Poste Italiane parcel tracker custom component for Home Assistant."""
+
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
+import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -27,7 +28,9 @@ class PosteItalianeData:
 type PosteItalianeConfigEntry = ConfigEntry[PosteItalianeData]
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: PosteItalianeConfigEntry) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant, entry: PosteItalianeConfigEntry
+) -> bool:
     """Set up Poste Italiane from a config entry."""
     # No auth: Poste Italiane tracking is public, so the HA-managed session is fine.
     client = PosteItalianeApiClient(async_get_clientsession(hass))
@@ -64,7 +67,9 @@ async def _async_options_updated(
     await entry.runtime_data.coordinator.async_request_refresh()
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: PosteItalianeConfigEntry) -> bool:
+async def async_unload_entry(
+    hass: HomeAssistant, entry: PosteItalianeConfigEntry
+) -> bool:
     """Unload the Poste Italiane config entry."""
     if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         return False

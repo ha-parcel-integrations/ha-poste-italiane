@@ -1,4 +1,5 @@
 """Poste Italiane public tracking API client."""
+
 from __future__ import annotations
 
 import logging
@@ -62,11 +63,15 @@ class PosteItalianeApiClient:
             "tipoRichiedente": "WEB",
             "periodoRicerca": 1,
         }
-        async with self._session.post(TRACKING_API_URL, json=body, headers=headers) as response:
+        async with self._session.post(
+            TRACKING_API_URL, json=body, headers=headers
+        ) as response:
             if response.status == 429:
                 retry_after_header = response.headers.get("Retry-After")
                 try:
-                    retry_after = float(retry_after_header) if retry_after_header else None
+                    retry_after = (
+                        float(retry_after_header) if retry_after_header else None
+                    )
                 except ValueError:
                     retry_after = None  # an HTTP-date, not seconds; let the caller's own backoff handle it
                 raise PosteItalianeApiError(

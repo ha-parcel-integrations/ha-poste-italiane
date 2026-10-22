@@ -1,4 +1,5 @@
 """Redacted Poste Italiane DoveQuando responses used by the test suite."""
+
 from __future__ import annotations
 
 ACTIVE_CODE = "LX000000000JP"
@@ -14,12 +15,21 @@ def movement(status: str, timestamp: int) -> dict:
 def delivered_sample(code: str = DELIVERED_CODE) -> dict:
     """PosteDelivery Europe response ending in delivery."""
     return {
-        "esitoRicerca": "3", "idTracciatura": code,
-        "tipoProdotto": "POSTEDELIVERY EUROPE", "tipoSpedizione": "P",
-        "stato": "5", "flagRitorno": False,
+        "esitoRicerca": "3",
+        "idTracciatura": code,
+        "tipoProdotto": "POSTEDELIVERY EUROPE",
+        "tipoSpedizione": "P",
+        "stato": "5",
+        "flagRitorno": False,
         "listaMovimenti": [
-            movement("la spedizione è stata presa in carico da un nostro operatore", 1767000000000),
-            movement("la spedizione è in transito presso il Centro di lavorazione Internazionale", 1767100000000),
+            movement(
+                "la spedizione è stata presa in carico da un nostro operatore",
+                1767000000000,
+            ),
+            movement(
+                "la spedizione è in transito presso il Centro di lavorazione Internazionale",
+                1767100000000,
+            ),
             movement("la spedizione è in consegna", 1767200000000),
             movement("la spedizione è stata consegnata", 1767300000000),
         ],
@@ -29,13 +39,19 @@ def delivered_sample(code: str = DELIVERED_CODE) -> dict:
 def active_sample(code: str = ACTIVE_CODE) -> dict:
     """International express response with customs processing in transit."""
     return {
-        "esitoRicerca": "3", "idTracciatura": code,
-        "tipoProdotto": "EXPRES DA/PER ESTERO", "tipoSpedizione": "C",
-        "stato": "4", "flagRitorno": False,
+        "esitoRicerca": "3",
+        "idTracciatura": code,
+        "tipoProdotto": "EXPRES DA/PER ESTERO",
+        "tipoSpedizione": "C",
+        "stato": "4",
+        "flagRitorno": False,
         "dataPrevistaConsegna": "Consegna prevista entro Giovedì 1 Gennaio 2026",
         "listaMovimenti": [
             movement("all'estero", 1767000000000),
-            movement("completata la fase di verifica per lo svincolo presso il Centro di lavorazione Internazionale", 1767100000000),
+            movement(
+                "completata la fase di verifica per lo svincolo presso il Centro di lavorazione Internazionale",
+                1767100000000,
+            ),
             movement("la spedizione è in consegna", 1767200000000),
         ],
     }
