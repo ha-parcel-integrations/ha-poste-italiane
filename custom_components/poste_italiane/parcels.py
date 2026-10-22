@@ -299,9 +299,8 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
     shared outside the installation.
     """
     tracking_code = raw.get("idTracciatura") or raw.get("trackingNumber")
-    events = (
-        raw.get("listaMovimenti") if isinstance(raw.get("listaMovimenti"), list) else []
-    )
+    movements = raw.get("listaMovimenti")
+    events = movements if isinstance(movements, list) else []
     latest_raw_status = None
     status = ParcelStatus.UNKNOWN
     delivered_at = None
