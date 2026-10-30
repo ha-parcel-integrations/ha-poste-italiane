@@ -114,6 +114,7 @@ Standard HA removal applies: **Settings → Devices & Services → Poste Italian
 | `sensor.poste_italiane_awaiting_pickup` | Number of parcels waiting for collection at a Poste Italiane pickup point (`at_pickup_point`), full list under the `parcels` attribute |
 | `sensor.poste_italiane_next_delivery` | Earliest expected delivery moment across all active parcels |
 | `sensor.poste_italiane_delivered_parcels` | Recently delivered parcels (see the retention option) |
+| `calendar.poste_italiane_deliveries` | Read-only calendar of expected deliveries, no extra API calls |
 | `sensor.poste_italiane_last_successful_update` | Diagnostic: when Poste Italiane was last polled successfully |
 
 A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically.
@@ -177,7 +178,7 @@ logger:
 ## Troubleshooting
 
 - **A parcel shows `unknown`** — the code may not be known yet, or Poste Italiane reported a status that this pre-1.0 integration has not mapped. A previously known parcel is retained during an intermittent empty response.
-- **A status logs "Unrecognised Poste Italiane status"** — please [open an issue](https://github.com/ha-parcel-integrations/ha-poste-italiane/issues/new) with the logged line so the mapping can be extended.
+- **A status logs "Unrecognised Poste Italiane status"** — please [open an issue](https://github.com/ha-parcel-integrations/ha-poste-italiane/issues/new?template=unrecognised_status.yml) with the logged line so the mapping can be extended.
 
 ## Related integrations
 
