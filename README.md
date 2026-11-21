@@ -35,7 +35,7 @@ A custom Home Assistant integration that tracks [Poste Italiane](https://www.pos
 
 - Track any number of Poste Italiane parcels by tracking code — no account needed
 - Per-parcel sensor with the canonical status, carrier status text, ETA and a tracking deep-link
-- Summary sensors: incoming parcels, parcels awaiting pickup, next delivery and recently delivered parcels
+- Summary sensors: incoming parcels, parcels on their way to a pickup point, parcels awaiting pickup, next delivery and recently delivered parcels
 - `poste_italiane.track_parcel` / `poste_italiane.untrack_parcel` services, so a dashboard button can add a parcel
 - Events + device triggers for no-code automations (parcel registered, status changed, delivered, delivery time changed)
 - Read-only **Deliveries** calendar with the expected delivery windows
@@ -111,6 +111,7 @@ Standard HA removal applies: **Settings → Devices & Services → Poste Italian
 |---|---|
 | `sensor.poste_italiane_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
 | `sensor.poste_italiane_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
+| `sensor.poste_italiane_en_route_to_pickup_point` | Number of incoming parcels destined for a pickup point that have not arrived yet, full list under the `parcels` attribute |
 | `sensor.poste_italiane_awaiting_pickup` | Number of parcels waiting for collection at a Poste Italiane pickup point (`at_pickup_point`), full list under the `parcels` attribute |
 | `sensor.poste_italiane_next_delivery` | Earliest expected delivery moment across all active parcels |
 | `sensor.poste_italiane_delivered_parcels` | Recently delivered parcels (see the retention option) |

@@ -44,15 +44,38 @@ This is an account-less, public tracking-code integration. It polls one code
 per request and retains the last successful parcel when the carrier briefly
 answers that a previously known code cannot be found. Its public response has no
 size, weight, sender or receiver fields, so those canonical fields are
-intentionally `None`. **`pickup_point` is populated**, from the structured
-office fields (`denominazioneUfficio` + `indirizzoUfficio`) or an `Ufficio
-Postale` that names itself in `luogo` — but **only on an event whose own
-wording says the parcel is collectable**. Poste fills those same office fields
-on its own sorting centres, so reading them unconditionally named a depot as
-the pickup point on ordinary doorstep deliveries; and `luogo` on a delivery
-event is the recipient's own address, so it is never read blind. The Italian `dataPrevistaConsegna`
-text is parsed into a local-day ETA window; `url`, that delivery window and
-opt-in `history` are capabilities.
+intentionally `None`. **`pickup` is `True`** once the parcel has reached `at_pickup_point` in any
+event Poste returned, so it stays `True` after collection (Poste gives no
+structured destination field). **`pickup_point` is the point's name only**, never
+its street address, and only when `pickup` is `True`: from `denominazioneUfficio`
+or an `Ufficio Postale` that names itself in `luogo` (Poste sends no separate
+name there, so that label is published as sent) — but **only on an event whose
+own wording says the parcel is collectable**. Poste fills those same office
+fields on its own sorting centres, so reading them unconditionally named a depot
+as the pickup point on ordinary doorstep deliveries; and `luogo` on a delivery
+event is the recipient's own address, so it is never read blind. A handover at a
+Punto Poste by the sender is not a pickup route. The Italian
+`dataPrevistaConsegna` text is a date with no time, so the window is that local
+day, `00:00:00` to `23:59:59` (Europe/Rome), emptied at `at_pickup_point`,
+`returning` and `delivered`; `url`, that window and opt-in `history` are
+capabilities.
+
+**Pickup sensors:** both `awaiting_pickup` and `en_route_to_pickup_point` exist.
+`en_route_to_pickup_point` stays at 0 in practice: with no structured
+destination field, `pickup` only turns `True` when the parcel reaches
+`at_pickup_point`, so a parcel is never "on its way" to a point beforehand.
+Pending evidence: a route flag or wording that announces a pickup-point
+destination before arrival.
+
+**`delivered` is `status is DELIVERED` only.** `stato == "5"` is folded into the
+status mapping and wins over `at_pickup_point` (collected is delivered). On a
+`returning` parcel it does not count: the contract wants evidence of delivery at
+the sender, and that wording has not been seen, so it stays `returning` with
+`delivered` False.
+
+**Open / unverified:** `_PICKUP_EVENT_PREFIXES` includes `presa in carico presso
+il Punto Poste`, which might be a sender drop-off rather than a collection
+point. Left as is until a real parcel shows which it is.
 
 A 2026-10-17 sweep of fourteen real parcels confirmed the return
 (`in restituzione al mittente`), collection (`disponibile per il ritiro`) and
@@ -69,8 +92,7 @@ failed-attempt (`consegna non andata a buon fine`) families, and the
 
 The confirmed status vocabulary is still incomplete. Unknown status text must
 remain `unknown` and emit the suite one-shot warning; do not infer return,
-collection or failure semantics beyond the families above. Carrier mechanics are in the private research notes at
-`carrier-research/poste-italiane/api/`.
+collection or failure semantics beyond the families above. 
 
 ## Running tests
 
@@ -80,5 +102,4 @@ python -m pytest tests/ --cov=custom_components.poste_italiane
 
 Coverage must stay **above 95%** (silver `test-coverage` rule). Run before
 committing. A code change updates the README + this file + `docs/` in the same
-commit; the API reference lives in your own private research notes, never in
-this repo.
+commit.

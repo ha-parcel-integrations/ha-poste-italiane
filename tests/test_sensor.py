@@ -7,6 +7,7 @@ from custom_components.poste_italiane.const import ParcelStatus
 from custom_components.poste_italiane.sensor import (
     PosteItalianeAwaitingPickupSensor,
     PosteItalianeDeliveredParcelsSensor,
+    PosteItalianeEnRouteToPickupPointSensor,
     PosteItalianeIncomingParcelsSensor,
     PosteItalianeLastUpdateSensor,
     PosteItalianeNextDeliverySensor,
@@ -86,12 +87,12 @@ def test_parcel_sensor_missing_barcode():
 def test_next_delivery_picks_earliest():
     coordinator = _coordinator(
         [
-            _parcel("A", planned_from="2026-05-02T10:00:00Z"),
-            _parcel("B", planned_from="2026-05-01T10:00:00Z"),
+            _parcel("A", planned_from="2099-05-02T10:00:00Z"),
+            _parcel("B", planned_from="2099-05-01T10:00:00Z"),
         ]
     )
     sensor = PosteItalianeNextDeliverySensor(coordinator, _entry())
-    assert sensor.native_value == datetime(2026, 5, 1, 10, 0, tzinfo=UTC)
+    assert sensor.native_value == datetime(2099, 5, 1, 10, 0, tzinfo=UTC)
     assert sensor.extra_state_attributes["barcode"] == "B"
 
 
@@ -105,7 +106,7 @@ def test_next_delivery_skips_unparseable_moment():
     coordinator = _coordinator(
         [
             _parcel("A", planned_from="not-a-date"),
-            _parcel("B", planned_from="2026-05-01T10:00:00Z"),
+            _parcel("B", planned_from="2099-05-01T10:00:00Z"),
         ]
     )
     sensor = PosteItalianeNextDeliverySensor(coordinator, _entry())
@@ -127,3 +128,33 @@ def test_last_update_sensor():
     coordinator.last_success_time = moment
     sensor = PosteItalianeLastUpdateSensor(coordinator, _entry())
     assert sensor.native_value == moment
+
+
+def test_en_route_and_awaiting_pickup_split():
+    parcels = [
+        _parcel("EN_ROUTE", pickup=True),
+        _parcel("READY", ParcelStatus.AT_PICKUP_POINT, pickup=True),
+        _parcel("HOME"),
+        _parcel("BACK", ParcelStatus.RETURNING, pickup=True),
+    ]
+    en_route = PosteItalianeEnRouteToPickupPointSensor(_coordinator(parcels), _entry())
+    awaiting = PosteItalianeAwaitingPickupSensor(_coordinator(parcels), _entry())
+    assert en_route.unique_id == "e1_en_route_to_pickup_point"
+    assert [p["barcode"] for p in en_route.extra_state_attributes["parcels"]] == [
+        "EN_ROUTE"
+    ]
+    assert [p["barcode"] for p in awaiting.extra_state_attributes["parcels"]] == [
+        "READY"
+    ]
+    assert en_route.native_value == 1
+
+
+def test_next_delivery_skips_a_window_that_has_ended():
+    coordinator = _coordinator(
+        [
+            _parcel("STALE", planned_from="2000-05-01T00:00:00+02:00"),
+            _parcel("LIVE", planned_from="2099-05-01T10:00:00Z"),
+        ]
+    )
+    sensor = PosteItalianeNextDeliverySensor(coordinator, _entry())
+    assert sensor.extra_state_attributes["barcode"] == "LIVE"

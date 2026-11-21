@@ -86,7 +86,7 @@ def test_epoch_milliseconds_are_converted_to_utc():
 def test_parses_italian_delivery_estimate_as_a_local_day_window():
     assert parse_delivery_estimate(
         "Consegna prevista entro Martedì 21 Gennaio 2025"
-    ) == ("2025-01-21T00:00:00+01:00", "2025-01-21T23:59:59.999999+01:00")
+    ) == ("2025-01-21T00:00:00+01:00", "2025-01-21T23:59:59+01:00")
 
 
 def test_history_is_oldest_first_and_capped():
@@ -144,7 +144,7 @@ def test_latest_recognised_event_drives_active_status_and_uses_tracking_url():
     assert parcel["status"] is ParcelStatus.OUT_FOR_DELIVERY
     assert parcel["delivered"] is False
     assert parcel["planned_from"] == "2026-01-01T00:00:00+01:00"
-    assert parcel["planned_to"] == "2026-01-01T23:59:59.999999+01:00"
+    assert parcel["planned_to"] == "2026-01-01T23:59:59+01:00"
     assert parcel["url"].endswith("LX000000000JP")
 
 
@@ -234,7 +234,7 @@ def test_pickup_point_comes_from_the_office_fields():
             "indirizzoUfficio": "VIA PIAVE 6",
         }
     ]
-    assert pickup_point(events) == "TABACCHERIA N. 7, VIA PIAVE 6"
+    assert pickup_point(events) == "TABACCHERIA N. 7"
 
 
 def test_pickup_point_accepts_a_post_office_named_in_luogo():
@@ -322,7 +322,7 @@ def test_parse_delivery_estimate_refuses_what_it_cannot_read():
     )
     assert parse_delivery_estimate("consegna prevista entro 11 agosto 2026") == (
         "2026-08-11T00:00:00+02:00",
-        "2026-08-11T23:59:59.999999+02:00",
+        "2026-08-11T23:59:59+02:00",
     )
 
 
