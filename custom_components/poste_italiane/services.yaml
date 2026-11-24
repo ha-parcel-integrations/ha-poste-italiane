@@ -5,11 +5,29 @@ track_parcel:
       example: "CW000000000IT"
       selector:
         text:
+    contents:
+      required: false
+      example: "Running shoes"
+      selector:
+        text:
 
 untrack_parcel:
   fields:
     tracking_code:
       required: true
       example: "CW000000000IT"
+      selector:
+        text:
+
+update_contents:
+  fields:
+    tracking_code:
+      required: true
+      example: "CW000000000IT"
+      selector:
+        text:
+    contents:
+      required: false
+      example: "Running shoes"
       selector:
         text:

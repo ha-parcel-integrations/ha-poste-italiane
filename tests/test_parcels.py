@@ -112,6 +112,7 @@ def test_normalize_publishes_exact_contract_and_full_raw_response():
         "barcode",
         "sender",
         "receiver",
+        "contents",
         "status",
         "raw_status",
         "delivered",
@@ -131,7 +132,7 @@ def test_normalize_publishes_exact_contract_and_full_raw_response():
     assert parcel["status"] is ParcelStatus.DELIVERED
     assert parcel["delivered"] is True
     assert parcel["delivered_at"] == "2026-01-01T20:40:00+00:00"
-    assert parcel["sender"] is parcel["receiver"] is None
+    assert parcel["sender"] is parcel["receiver"] is parcel["contents"] is None
     assert parcel["planned_from"] is parcel["planned_to"] is None
     assert parcel["pickup"] is False and parcel["pickup_point"] is None
     assert parcel["weight"] is parcel["dimensions"] is None
@@ -159,6 +160,7 @@ def test_capabilities_are_accurate():
         frozenset({"delivery_window", "pickup_point", "url", "history"}) == CAPABILITIES
     )
     assert CAPABILITIES <= KNOWN_CAPABILITIES
+    assert KNOWN_CAPABILITIES - {"contents"} >= CAPABILITIES
 
 
 def test_sort_and_delivered_filter_keep_contract():

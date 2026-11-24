@@ -87,9 +87,10 @@ class PosteItalianeDeliveriesCalendar(
                 event_start, event_end = days
 
             barcode = parcel.get("barcode") or ""
-            sender = parcel.get("sender")
-            summary = sender or (
-                f"Parcel {barcode}" if barcode else "Poste Italiane parcel"
+            summary = (
+                parcel.get("contents")
+                or parcel.get("sender")
+                or (f"Parcel {barcode}" if barcode else "Poste Italiane parcel")
             )
             description_parts = [
                 f"Barcode: {barcode}" if barcode else None,
